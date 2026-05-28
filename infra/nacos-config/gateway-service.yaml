@@ -1,0 +1,29 @@
+# Data ID: gateway-service.yaml
+# Group  : DEFAULT_GROUP
+#
+# 将路由放到 Nacos 后，修改路由不再需要重启网关。
+# 配合 Spring Cloud Gateway 的 NacosRouteDefinitionRepository，
+# 可实现完全动态的路由管理。
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/bookings/**
+          filters:
+            - StripPrefix=1
+        - id: inventory-service
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - StripPrefix=1
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1

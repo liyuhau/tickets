@@ -1,0 +1,1 @@
+dubboAuthContext=org.common.auth.DubboAuthContextFilter

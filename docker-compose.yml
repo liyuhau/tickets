@@ -1,0 +1,167 @@
+# 完整 CDC 数据同步链路基础设施
+# 启动：docker compose up -d
+# 注册 Debezium 连接器：bash infra/register-debezium-connector.sh
+#
+# 端口一览：
+#   MySQL          : 3306   (root/root, 业务库 bizdb)
+#   Zookeeper      : 2181
+#   Kafka          : 9092   (宿主机), 29092 (容器内)
+#   Kafka Connect  : 8083   (Debezium REST API)
+#   Kafka UI       : 8080
+#   Elasticsearch  : 9200
+#   Redis          : 6379
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: bizdb
+      MYSQL_USER: debezium
+      MYSQL_PASSWORD: dbz
+    command:
+      - --server-id=223344
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --binlog-row-image=FULL
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+    volumes:
+      - ./infra/mysql-init:/docker-entrypoint-initdb.d
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Zookeeper：
+  #  - Kafka 的元数据协调（必需）
+  #  - Dubbo 备用注册中心（DUBBO_REGISTRY=zookeeper://127.0.0.1:2181 时启用）
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_ADMIN_ENABLE_SERVER: "false"   # 关闭 8080 admin 端口避免与 kafka-ui 冲突
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: "srvr,ruok,stat,mntr,conf"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc -w 2 localhost 2181 | grep -q imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ZooNavigator —— 可选 Zookeeper 可视化（默认不启动；docker compose --profile zk-ui up -d 启用）
+  # 控制台：http://localhost:9001  → Connection string: zookeeper:2181
+  zoonavigator:
+    image: elkozmon/zoonavigator:1.1.2
+    container_name: zoonavigator
+    profiles: ["zk-ui"]
+    depends_on: [zookeeper]
+    ports:
+      - "9001:9000"
+    environment:
+      HTTP_PORT: 9000
+      AUTO_CONNECT_CONNECTION_STRING: zookeeper:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  connect:
+    image: debezium/connect:2.5
+    container_name: connect
+    depends_on: [kafka, mysql]
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on: [kafka, connect]
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # 服务注册中心 + 配置中心（单机模式，使用内嵌 derby 存储；生产应改 MySQL）
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: nacos
+    ports:
+      - "8848:8848"   # 控制台 / OpenAPI
+      - "9848:9848"   # gRPC（2.x 必需）
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_TOKEN: SecretKey012345678901234567890123456789012345678901234567890123456789
+      NACOS_AUTH_IDENTITY_KEY: serverIdentity
+      NACOS_AUTH_IDENTITY_VALUE: security
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+    # Sentinel Dashboard（流控/熔断规则可视化与下发）
+  # 控制台地址：http://localhost:8858  账号/密码：sentinel/sentinel
+  sentinel-dashboard:
+    image: bladex/sentinel-dashboard:1.8.7
+    container_name: sentinel-dashboard
+    ports:
+      - "8858:8858"
+    environment:
+      JAVA_OPTS: >-
+        -Dserver.port=8858
+        -Dcsp.sentinel.dashboard.server=localhost:8858
+        -Dproject.name=sentinel-dashboard
+        -Dsentinel.dashboard.auth.username=sentinel
+        -Dsentinel.dashboard.auth.password=sentinel
+
+volumes:
+  mysql-data:

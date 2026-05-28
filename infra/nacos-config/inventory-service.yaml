@@ -1,0 +1,6 @@
+# Data ID: inventory-service.yaml
+# Group  : DEFAULT_GROUP
+
+inventory:
+  warn-threshold: 5         # 余量低于该值时告警（机票=座位，酒店=房间）
+  default-currency: CNY

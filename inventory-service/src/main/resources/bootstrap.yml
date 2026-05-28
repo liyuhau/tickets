@@ -1,0 +1,30 @@
+# bootstrap.yml —— 最早加载，负责连接 Nacos Config 拉取业务配置
+# 加载顺序：bootstrap.yml (本地) -> Nacos Config (远程) -> application.yml (本地)
+# 拉取的 dataId 列表（按 Spring Cloud Alibaba 规则）：
+#   1. inventory-service.yaml                  共享给所有 profile
+#   2. inventory-service-${spring.profiles.active}.yaml
+#   3. extension-configs / shared-configs（下方手动追加）
+
+spring:
+  application:
+    name: inventory-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:public}
+        group: DEFAULT_GROUP
+      config:
+        namespace: ${NACOS_NAMESPACE:public}
+        group: DEFAULT_GROUP
+        file-extension: yaml
+        refresh-enabled: true
+        # 跨服务共享配置（如：日志、监控、统一异常码段）
+        shared-configs:
+          - data-id: common-shared.yaml
+            group: DEFAULT_GROUP
+            refresh: true

@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: data-sync-consumer
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        file-extension: yaml
+        shared-configs:
+          - data-id: common-shared.yaml
+            group: DEFAULT_GROUP
+            refresh: true

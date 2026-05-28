@@ -1,0 +1,53 @@
+server:
+  port: 8083
+spring:
+  application:
+    name: inventory-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+    # Sentinel
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:127.0.0.1:8858}
+        port: 8721
+      eager: true
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bizdb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+# MyBatis-Plus
+mybatis-plus:
+  type-aliases-package: org.inventory.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# Dubbo 服务提供方
+  application:
+    port: -1                    # 自动分配端口
+    name: inventory-service
+    qos-enable: false
+  registry:
+    # 默认 Nacos；切换 ZK：DUBBO_REGISTRY=zookeeper://127.0.0.1:2181
+    address: ${DUBBO_REGISTRY:nacos://${NACOS_ADDR:127.0.0.1:8848}}
+    register-mode: instance
+  protocol:
+    name: dubbo
+    port: -1
+  provider:
+    timeout: ${DUBBO_PROVIDER_TIMEOUT:3000}
+  scan:
+    base-packages: org.inventory.service

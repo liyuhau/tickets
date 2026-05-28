@@ -1,0 +1,81 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bizdb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    drRegisteredClientRepositoryiver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  type-aliases-package: org.user.simple
+  configuration:
+    map-underscore-to-camel-case: true
+
+# OAuth2 Authorization Server
+oauth2:
+  issuer: ${OAUTH2_ISSUER:http://127.0.0.1:8081}
+  # JWT 签名密钥来源（生产必须 keystore 或 pem，random 重启会让所有 token 失效）
+  key:
+    source:  ${OAUTH2_KEY_SOURCE:random}                # random | keystore | pem
+    key-id:  ${OAUTH2_KEY_ID:jwt-signing-key-2026q2}
+    keystore:
+      location:     ${OAUTH2_KEYSTORE_LOCATION:file:///etc/oauth2/jwt-signing.p12}
+      password:     ${OAUTH2_KEYSTORE_PASSWORD:}
+      alias:        ${OAUTH2_KEYSTORE_ALIAS:jwt-signing}
+      key-password: ${OAUTH2_KEYSTORE_KEY_PASSWORD:${OAUTH2_KEYSTORE_PASSWORD:}}
+    pem:
+      private-location: ${OAUTH2_PEM_PRIVATE:file:///etc/oauth2/jwt-private.pem}
+      public-location:  ${OAUTH2_PEM_PUBLIC:file:///etc/oauth2/jwt-public.pem}
+  # 同业渠道客户端列表（client_credentials 模式）；
+  # 生产请把 secret 放环境变量 / KMS，禁止明文。
+  clients:
+    - client-id: ctrip-channel
+      client-secret: ${CTRIP_SECRET:ctrip-secret}
+      channel: CTRIP
+      user-id: 1001
+      name: CTRIP-TRAVEL-AGENCY-A
+      scopes:
+        - booking.read
+        - booking.write
+        - inventory.read
+      grant-types:
+        - client_credentials
+        - refresh_token
+        - authorization_code
+      redirect-uris:
+        - http://localhost:9000/login/oauth2/code/ctrip   # 演示用，前端 UI 回调
+      access-token-ttl:  PT30M     # 30 分钟
+      refresh-token-ttl: P7D       # 7 天
+      reuse-refresh-tokens: false  # 刷新即旋转，防重放
+    - client-id: fliggy-channel
+      client-secret: ${FLIGGY_SECRET:fliggy-secret}
+      channel: FLIGGY
+      user-id: 1002
+      name: FLIGGY-PARTNER-B
+      scopes:
+        - booking.read
+        - booking.write
+        - inventory.read
+      grant-types: [client_credentials, refresh_token]
+      access-token-ttl:  PT30M
+      refresh-token-ttl: P7D
+    - client-id: expedia-channel
+      client-secret: ${EXPEDIA_SECRET:expedia-secret}
+      channel: EXPEDIA
+      user-id: 1003
+      name: EXPEDIA-DIST-C
+      scopes:
+        - booking.read
+        - booking.write
+        - inventory.read
+      grant-types: [client_credentials]   # 仅服务到服务，不需要 refresh
+      access-token-ttl: PT15M             # 短一些，更安全

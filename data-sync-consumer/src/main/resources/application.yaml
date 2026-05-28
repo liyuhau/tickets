@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8090}
+
+spring:
+  application:
+    name: data-sync-consumer
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+
+# Debezium 默认主题命名：${topic.prefix}.${database}.${table}
+# 我们的 connector topic.prefix=cdc, database=bizdb
+cdc:
+  # 逗号分隔字符串，便于 SpEL '${cdc.topics}'.split(',') 解析
+  topics: ${CDC_TOPICS:cdc.bizdb.user,cdc.bizdb.booking,cdc.bizdb.product}
+  es:
+    index-prefix: ${CDC_ES_INDEX_PREFIX:}     # 留空 = 索引名 = 表名
+  redis:
+    key-template: ${CDC_REDIS_KEY_TEMPLATE:%s:%s}
+  dw:
+    table-prefix: ${CDC_DW_TABLE_PREFIX:ods_}

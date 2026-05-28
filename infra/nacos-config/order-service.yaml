@@ -1,0 +1,8 @@
+# Data ID: order-service.yaml
+# Group  : DEFAULT_GROUP
+# 用于演示 @RefreshScope 动态刷新；可在 Nacos 控制台即时修改并生效
+
+order:
+  # 单订单最大份数：民航实际上限 9（机票=9 名乘机人，酒店=9 间客房）
+  max-quantity-per-request: 9
+  risk-control-enabled: true

@@ -1,0 +1,103 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+    # Sentinel：网关限流上报控制台
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:127.0.0.1:8858}
+        port: 8719
+      eager: true
+      scg:
+        fallback:
+          mode: response
+          response-status: 429
+          response-body: '{"code":1429,"message":"请求过于频繁，请稍后再试"}'
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: oauth2-token
+          uri: lb://user-service
+          predicates:
+            - Path=/api/oauth2/**
+          filters:
+            - StripPrefix=1            # /api/oauth2/token -> /oauth2/token
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/bookings/**
+          filters:
+            - StripPrefix=1
+        - id: inventory-service
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - StripPrefix=1
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER:http://127.0.0.1:8081}
+
+# 网关白名单（OAuth2 端点 + 健康检查 + 元数据）+ 鉴权错误响应（与 common-core ResultCode 对齐）
+security:
+  white-list:
+    - /api/oauth2/**
+    - /oauth2/**
+    - /.well-known/**
+    - /actuator/**
+  unauthorized:
+    code: 1401
+    message: '未登录或 token 无效'
+  forbidden:
+    code: 1403
+    message: '无权访问'
+  # 让吊销的 token "立刻生效"——开启后每次请求查 AS 的 /oauth2/introspect（带 Caffeine 缓存）
+  # 关闭（默认）= 依赖本地 JWT 验签，吊销延迟 = access_token TTL
+  introspect:
+    enabled:        ${INTROSPECT_ENABLED:false}
+    uri:            ${INTROSPECT_URI:${spring.security.oauth2.resourceserver.jwt.issuer-uri}/oauth2/introspect}
+    client-id:      ${INTROSPECT_CLIENT_ID:ctrip-channel}
+    client-secret:  ${INTROSPECT_CLIENT_SECRET:ctrip-secret}
+    cache-seconds:  ${INTROSPECT_CACHE_SECONDS:10}
+    cache-max-size: ${INTROSPECT_CACHE_MAX:50000}
+
+# Sentinel 网关限流规则（被 SentinelGatewayConfig 注入）
+sentinel:
+  gateway:
+    channel-header: X-User-Channel
+    block-code: 1429
+    block-message: '请求过于频繁，请稍后再试'
+    block-status: 429
+    apis:
+      booking-api:   [/api/bookings/**]
+      inventory-api: [/api/inventory/**]
+    api-qps:
+      booking-api:   ${GW_BOOKING_QPS:50}
+      inventory-api: ${GW_INVENTORY_QPS:200}
+    channel-qps:
+      booking-api:   ${GW_BOOKING_CHANNEL_QPS:20}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+
+    org.springframework.security: INFO

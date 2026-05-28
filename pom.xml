@@ -1,0 +1,177 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.example</groupId>
+  <artifactId>data-sync-service</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>data-sync-service</name>
+  <url>http://maven.apache.org</url>
+  <modules>
+    <module>common-core</module>
+    <module>inventory-api</module>
+    <module>gateway-service</module>
+    <module>user-service</module>
+    <module>order-service</module>
+    <module>inventory-service</module>
+    <module>data-sync-consumer</module>
+  </modules>
+
+  <properties>
+    <java.version>17</java.version>
+    <spring.boot.version>3.2.5</spring.boot.version>
+    <spring.cloud.version>2023.0.1</spring.cloud.version>
+    <spring.cloud.alibaba.version>2023.0.1.0</spring.cloud.alibaba.version>
+    <dubbo.version>3.2.15</dubbo.version>
+    <mybatis.spring.boot.version>3.0.3</mybatis.spring.boot.version>
+    <mybatis.plus.version>3.5.5</mybatis.plus.version>
+    <sentinel.version>1.8.6</sentinel.version>
+    <curator.version>5.6.0</curator.version>
+    <zookeeper.version>3.8.4</zookeeper.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-dependencies</artifactId>
+      <version>${spring.boot.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <!-- Spring Cloud BOM -->
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-dependencies</artifactId>
+      <version>${spring.cloud.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <!-- Spring Cloud Alibaba BOM（含 Nacos Discovery / Config） -->
+    <dependency>
+      <groupId>com.alibaba.cloud</groupId>
+      <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+      <version>${spring.cloud.alibaba.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <!-- Apache Dubbo —— 直接管理需要的两个 jar，免去 BOM 解析问题 -->
+    <dependency>
+      <groupId>org.apache.dubbo</groupId>
+      <artifactId>dubbo-spring-boot-starter</artifactId>
+      <version>${dubbo.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.dubbo</groupId>
+      <artifactId>dubbo-registry-nacos</artifactId>
+      <version>${dubbo.version}</version>
+    </dependency>
+    <!-- Dubbo Zookeeper 注册中心（与 Nacos 并存，二选一由 yaml dubbo.registry.address 切换） -->
+    <dependency>
+      <groupId>org.apache.dubbo</groupId>
+      <artifactId>dubbo-registry-zookeeper</artifactId>
+      <version>${dubbo.version}</version>
+    </dependency>
+    <!-- Curator：Dubbo zk 注册中心底层客户端 -->
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-framework</artifactId>
+      <version>${curator.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-recipes</artifactId>
+      <version>${curator.version}</version>
+    </dependency>
+    <!-- ZooKeeper 原生客户端（与 curator 对齐版本，排除自带的 slf4j-log4j12 防止依赖冲突） -->
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- MyBatis (Spring Boot 3.x) -->
+    <dependency>
+      <groupId>org.mybatis.spring.boot</groupId>
+      <artifactId>mybatis-spring-boot-starter</artifactId>
+      <version>${mybatis.spring.boot.version}</version>
+    </dependency>
+    <!-- MyBatis-Plus（Spring Boot 3.x 独立 starter） -->
+    <dependency>
+      <groupId>com.baomidou</groupId>
+      <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+      <version>${mybatis.plus.version}</version>
+    </dependency>
+    <!-- Sentinel 适配器：Spring Cloud Gateway / Apache Dubbo 3
+         （SCA BOM 的 sentinel core 已托管，但这两个 adapter 在 csp groupId 下，需要单独管版本） -->
+    <dependency>
+      <groupId>com.alibaba.csp</groupId>
+      <artifactId>sentinel-spring-cloud-gateway-adapter</artifactId>
+      <version>${sentinel.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba.csp</groupId>
+      <artifactId>sentinel-apache-dubbo3-adapter</artifactId>
+      <version>${sentinel.version}</version>
+    </dependency>
+    <!-- 内部公共模块 -->
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>common-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>inventory-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  </dependencyManagement>
+
+  <!-- 所有子模块默认引入 bootstrap，启用 bootstrap.yml（Spring Cloud 2020+ 已不再默认启用） -->
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-bootstrap</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.11.0</version>
+          <configuration>
+            <source>${java.version}</source>
+            <target>${java.version}</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring.boot.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
