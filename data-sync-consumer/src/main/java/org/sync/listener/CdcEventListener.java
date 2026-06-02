@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.common.http.HttpClientHelper;
 
 /**
  * 真实消费者：订阅 Debezium 写到 Kafka 的 CDC 主题，
@@ -22,7 +22,7 @@ public class CdcEventListener {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final StringRedisTemplate redis;
-    private final RestTemplate rest;
+    private final HttpClientHelper httpClient;
 
     @Value("${spring.elasticsearch.uris:http://localhost:9200}")
     private String esBaseUrl;
@@ -37,9 +37,9 @@ public class CdcEventListener {
     @Value("${cdc.dw.table-prefix:ods_}")
     private String dwTablePrefix;
 
-    public CdcEventListener(StringRedisTemplate redis, RestTemplate rest) {
+    public CdcEventListener(StringRedisTemplate redis, HttpClientHelper httpClient) {
         this.redis = redis;
-        this.rest = rest;
+        this.httpClient = httpClient;
     }
 
     @KafkaListener(topics = "#{'${cdc.topics}'.split(',')}")
@@ -67,7 +67,7 @@ public class CdcEventListener {
         if (after == null || after.isNull()) return;
         String id = idOf(after);
         String url = esBaseUrl + "/" + esIndexPrefix + table + "/_doc/" + id;
-        try { rest.put(url, after.toString()); log.info("[ES] upsert {}/{}", table, id); }
+        try { httpClient.put(url, after.toString(), String.class); log.info("[ES] upsert {}/{}", table, id); }
         catch (Exception e) { log.warn("[ES] upsert failed: {}", e.getMessage()); }
     }
 
@@ -75,7 +75,7 @@ public class CdcEventListener {
         if (before == null || before.isNull()) return;
         String id = idOf(before);
         String url = esBaseUrl + "/" + esIndexPrefix + table + "/_doc/" + id;
-        try { rest.delete(url); log.info("[ES] delete {}/{}", table, id); }
+        try { httpClient.delete(url, String.class); log.info("[ES] delete {}/{}", table, id); }
         catch (Exception e) { log.warn("[ES] delete failed: {}", e.getMessage()); }
     }
 

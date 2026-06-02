@@ -36,10 +36,21 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- MyBatis-Plus（provided，仅供 MybatisPlusAutoConfiguration 编译；实际由业务服务自己引入） -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Apache HttpClient 5：连接池 + 超时 + Keep-Alive（provided，运行时由业务服务引入） -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- Dubbo（provided）：仅供 DubboAuthContextFilter 编译，运行时由业务服务自行引入 -->
