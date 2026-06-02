@@ -1,0 +1,69 @@
+# =====================================================================
+# ShardingSphere-JDBC 分库分表配置
+# 策略：按 user_id 取模分库 (2库) + 分表 (每库2张)
+# booking → ds0.booking_0 / ds0.booking_1 / ds1.booking_0 / ds1.booking_1
+# =====================================================================
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+
+dataSources:
+  ds0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bizdb_0?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  ds1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bizdb_1?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+rules:
+  - !SHARDING
+    tables:
+      booking:
+        # 实际节点：ds0.booking_0, ds0.booking_1, ds1.booking_0, ds1.booking_1
+        actualDataNodes: ds${0..1}.booking_${0..1}
+        # 分库策略：user_id % 2 → 决定 ds0 / ds1
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: db_mod
+        # 分表策略：user_id / 2 % 2 → 决定 booking_0 / booking_1
+        tableStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: tbl_mod
+        # 主键生成：雪花算法（分布式唯一 ID，替代 AUTO_INCREMENT）
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+
+    shardingAlgorithms:
+      db_mod:
+        type: MOD
+        props:
+          sharding-count: 2      # 2 个库
+      tbl_mod:
+        type: MOD
+        props:
+          sharding-count: 2      # 每库 2 张表
+
+    keyGenerators:
+      snowflake:
+        type: SNOWFLAKE
+        props:
+          worker-id: 1
+
+props:
+  sql-show: true                 # 开发阶段打印实际路由 SQL，生产关闭

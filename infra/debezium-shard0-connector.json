@@ -1,0 +1,24 @@
+{
+  "name": "bizdb0-sharding-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "tasks.max": "1",
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "debezium",
+    "database.password": "dbz",
+    "database.server.id": "184055",
+    "topic.prefix": "cdc-shard0",
+    "database.include.list": "bizdb_0",
+    "table.include.list": "bizdb_0.booking_0,bizdb_0.booking_1",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka:29092",
+    "schema.history.internal.kafka.topic": "schema-history.bizdb0",
+    "include.schema.changes": "false",
+    "snapshot.mode": "initial",
+
+    "transforms": "route",
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "cdc-shard0\\.bizdb_0\\.booking_.*",
+    "transforms.route.replacement": "cdc.bizdb.booking"
+  }
+}
