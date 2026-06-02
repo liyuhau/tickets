@@ -16,7 +16,8 @@ import java.time.LocalDate;
 @TableName("booking")
 public class Order {
 
-    @TableId(value = "id", type = IdType.AUTO)
+    /** 分库分表后使用雪花算法生成分布式唯一 ID（由 ShardingSphere keyGenerateStrategy 驱动） */
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
     private String channel;
