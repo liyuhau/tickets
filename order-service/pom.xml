@@ -87,6 +87,11 @@
             <artifactId>shardingsphere-jdbc-core</artifactId>
             <version>5.3.2</version>
         </dependency>
+        <!-- Apache HttpClient 5：驱动 common-core 的 HttpClientHelper（查 ES 大宽表用） -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

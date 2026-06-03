@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.common.http.HttpClientHelper;
+import org.sync.service.WideTableSyncer;
 
 /**
  * 真实消费者：订阅 Debezium 写到 Kafka 的 CDC 主题，
@@ -23,6 +25,8 @@ public class CdcEventListener {
 
     private final StringRedisTemplate redis;
     private final HttpClientHelper httpClient;
+    @Autowired
+    private WideTableSyncer wideTableSyncer;
 
     @Value("${spring.elasticsearch.uris:http://localhost:9200}")
     private String esBaseUrl;
@@ -94,5 +98,24 @@ public class CdcEventListener {
         if (row.has("id")) return row.get("id").asText();
         if (row.has("product_id")) return row.get("product_id").asText();
         return String.valueOf(row.hashCode());
+    }
+
+    /**
+     * 大宽表同步分发：���据变更的表名路由到 WideTableSyncer 对应方法。
+     * booking 变更 → 组装完整宽表文档写入 ES
+     * user/product 变更 → 更新维度缓存 + 批量刷新相关宽表文档
+     */
+    private void syncWideTable(String table, String op, JsonNode after, JsonNode before) {
+        try {
+            switch (table) {
+                // 分片表名 booking_0 / booking_1 也匹配
+                case "booking", "booking_0", "booking_1" -> wideTableSyncer.onBookingChange(op, after, before);
+                case "user"    -> wideTableSyncer.onUserChange(op, after, before);
+                case "product" -> wideTableSyncer.onProductChange(op, after, before);
+                default -> { /* 其他表不参与大宽表 */ }
+            }
+        } catch (Exception e) {
+            log.warn("[大宽表] sync failed table={}: {}", table, e.getMessage());
+        }
     }
 }

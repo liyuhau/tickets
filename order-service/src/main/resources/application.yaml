@@ -27,6 +27,9 @@ spring:
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
+  # ES 大宽表查询地址（跨表 JOIN 走 ES 不走 MySQL）
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
 
 # MyBatis-Plus
 mybatis-plus:
