@@ -1,0 +1,170 @@
+──────────────────────────────────────
+Thread: mainThreadPool-0
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@5c9c6d40
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.put(LinkedBlockingQueue.java:343)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.toAzureAndAddToQueue(Db2Reader.java:165)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.convertDb2ToAzure(Db2Reader.java:126)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.lambda$readFullSynckData$0(Db2Reader.java:87)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader$$Lambda/0x000001d3834e78f8.call(Unknown Source)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:317)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run(FutureTask.java)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    ... 2 more
+
+	──────────────────────────────────────
+Thread: bg_thread_pool-1
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@58a3f28c
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1070)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1130)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    at java.base@21.0.9/java.lang.Thread.runWith(Thread.java:1596)
+    at java.base@21.0.9/java.lang.Thread.run(Thread.java:1583)
+
+──────────────────────────────────────
+Thread: bg_thread_pool-2
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@58a3f28c
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1070)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1130)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    at java.base@21.0.9/java.lang.Thread.runWith(Thread.java:1596)
+    at java.base@21.0.9/java.lang.Thread.run(Thread.java:1583)
+
+──────────────────────────────────────
+Thread: mainThreadPool-0
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@5c9c6d40
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.put(LinkedBlockingQueue.java:343)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.toAzureAndAddToQueue(Db2Reader.java:165)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.convertDb2ToAzure(Db2Reader.java:126)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.lambda$readFullSynckData$0(Db2Reader.java:87)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader$$Lambda/0x000001d3834e78f8.call(Unknown Source)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:317)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run(FutureTask.java)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    ... 2 more
+
+──────────────────────────────────────
+Thread: AS400 Read Daemon [system:mildev.ap.manulife.com;job:892455/QUSER/QZDASOINIT]
+State:  RUNNABLE
+    at java.base@21.0.9/sun.nio.ch.SocketDispatcher.read0(Native Method)
+    at java.base@21.0.9/sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:46)
+    at java.base@21.0.9/sun.nio.ch.NioSocketImpl.tryRead(NioSocketImpl.java:256)
+    at java.base@21.0.9/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:307)
+    at java.base@21.0.9/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:346)
+    at java.base@21.0.9/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:796)
+    at java.base@21.0.9/java.net.Socket$SocketInputStream.read(Socket.java:1099)
+    at app//com.ibm.as400.access.DataStream.readFromStream(DataStream.java:54)
+    at app//com.ibm.as400.access.ClientAccessDataStream.construct(ClientAccessDataStream.java:61)
+    at app//com.ibm.as400.access.AS400ThreadedServer.run(AS400ThreadedServer.java:359)
+    at java.base@21.0.9/java.lang.Thread.runWith(Thread.java:1596)
+    at java.base@21.0.9/java.lang.Thread.run(Thread.java:1583)
+Thread: bg_thread_pool-0
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@3316a965
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)
+    at app//com.manulife.hk.datasync.model.task.DbBatchSyncTask.call(DbBatchSyncTask.java:80)
+    at app//com.manulife.hk.datasync.model.task.DbBatchSyncTask.call(DbBatchSyncTask.java:44)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:317)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run(FutureTask.java)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    at java.base@21.0.9/java.lang.Thread.runWith(Thread.java:1596)
+    at java.base@21.0.9/java.lang.Thread.run(Thread.java:1583)
+
+──────────────────────────────────────
+Thread: bg_thread_pool-1
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@3316a965
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)
+    at app//com.manulife.hk.datasync.model.task.DbBatchSyncTask.call(DbBatchSyncTask.java:80)
+    at app//com.manulife.hk.datasync.model.task.DbBatchSyncTask.call(DbBatchSyncTask.java:44)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:317)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run(FutureTask.java)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    at java.base@21.0.9/java.lang.Thread.runWith(Thread.java:1596)
+    at java.base@21.0.9/java.lang.Thread.run(Thread.java:1583)
+
+──────────────────────────────────────
+Thread: bg_thread_pool-2
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@3316a965
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:435)
+    at app//com.manulife.hk.datasync.model.task.DbBatchSyncTask.call(DbBatchSyncTask.java:80)
+    at app//com.manulife.hk.datasync.model.task.DbBatchSyncTask.call(DbBatchSyncTask.java:44)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:317)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run(FutureTask.java)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    at java.base@21.0.9/java.lang.Thread.runWith(Thread.java:1596)
+    at java.base@21.0.9/java.lang.Thread.run(Thread.java:1583)
+
+──────────────────────────────────────
+Thread: mainThreadPool-0
+State:  WAITING
+Blocked on: java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject@5c9c6d40
+    at java.base@21.0.9/jdk.internal.misc.Unsafe.park(Native Method)
+    at java.base@21.0.9/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionNode.block(AbstractQueuedSynchronizer.java:519)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.unmanagedBlock(ForkJoinPool.java:3778)
+    at java.base@21.0.9/java.util.concurrent.ForkJoinPool.managedBlock(ForkJoinPool.java:3723)
+    at java.base@21.0.9/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1712)
+    at java.base@21.0.9/java.util.concurrent.LinkedBlockingQueue.put(LinkedBlockingQueue.java:343)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.toAzureAndAddToQueue(Db2Reader.java:165)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.convertDb2ToAzure(Db2Reader.java:126)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader.lambda$readFullSynckData$0(Db2Reader.java:87)
+    at app//com.manulife.hk.datasync.component.db.Db2Reader$$Lambda/0x000001d3834e78f8.call(Unknown Source)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run$$$capture(FutureTask.java:317)
+    at java.base@21.0.9/java.util.concurrent.FutureTask.run(FutureTask.java)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+    at java.base@21.0.9/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+    ... 2 more
