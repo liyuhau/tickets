@@ -10,8 +10,7 @@ import org.order.config.OrderDynamicProperties;
 import org.order.entity.Order;
 import org.order.mapper.BookingMapper;
 import org.order.service.BookingWideQueryService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,11 +34,11 @@ import java.util.Map;
  *   <li>若步骤 3 失败需补偿 restock（生产代码应做 TCC / 可靠消息）</li>
  * </ol>
  */
+@Slf4j
 @RestController
 @RequestMapping("/bookings")
 public class OrderController {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
 
     private final InventoryClient inventoryClient;
     private final OrderDynamicProperties props;

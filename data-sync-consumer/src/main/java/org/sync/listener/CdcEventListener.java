@@ -2,12 +2,13 @@ package org.sync.listener;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.common.http.HttpClientHelper;
 import org.sync.service.WideTableSyncer;
@@ -15,16 +16,22 @@ import org.sync.service.WideTableSyncer;
 /**
  * 真实消费者：订阅 Debezium 写到 Kafka 的 CDC 主题，
  * 同步到 Elasticsearch / Redis / 数仓（这里数仓打日志代替）。
+ * <p>
+ * ES 写入 / Redis 清理 / 大宽表同步等 IO 密集操作提交到 {@code bizThreadPool}，
+ * 避免阻塞 Kafka Consumer 线程，提升消费吞吐量。
+ * </p>
  * <p>所有外部地址 / 索引前缀 / Key 模板均从配置注入，禁止硬编码。</p>
  */
+@Slf4j
 @Component
 public class CdcEventListener {
 
-    private static final Logger log = LoggerFactory.getLogger(CdcEventListener.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final StringRedisTemplate redis;
     private final HttpClientHelper httpClient;
+    private final ThreadPoolTaskExecutor bizPool;
+
     @Autowired
     private WideTableSyncer wideTableSyncer;
 
@@ -41,9 +48,12 @@ public class CdcEventListener {
     @Value("${cdc.dw.table-prefix:ods_}")
     private String dwTablePrefix;
 
-    public CdcEventListener(StringRedisTemplate redis, HttpClientHelper httpClient) {
+    public CdcEventListener(StringRedisTemplate redis,
+                            HttpClientHelper httpClient,
+                            @Qualifier("bizThreadPool") ThreadPoolTaskExecutor bizPool) {
         this.redis = redis;
         this.httpClient = httpClient;
+        this.bizPool = bizPool;
     }
 
     @KafkaListener(topics = "#{'${cdc.topics}'.split(',')}")
@@ -57,9 +67,21 @@ public class CdcEventListener {
             JsonNode before = payload.get("before");
 
             log.info("[CDC] table={} op={} before={} after={}", table, op, before, after);
+
+            // ES / Redis / 数仓同步提交到 bizThreadPool 并行执行，不阻塞 Kafka consumer 线程
             switch (op) {
-                case "c", "u", "r" -> { syncToEs(table, after); evictRedis(table, after); appendDw(table, op, before, after); }
-                case "d" -> { deleteFromEs(table, before); evictRedis(table, before); appendDw(table, op, before, after); }
+                case "c", "u", "r" -> {
+                    bizPool.submit(() -> syncToEs(table, after));
+                    bizPool.submit(() -> evictRedis(table, after));
+                    bizPool.submit(() -> appendDw(table, op, before, after));
+                    bizPool.submit(() -> syncWideTable(table, op, after, before));
+                }
+                case "d" -> {
+                    bizPool.submit(() -> deleteFromEs(table, before));
+                    bizPool.submit(() -> evictRedis(table, before));
+                    bizPool.submit(() -> appendDw(table, op, before, after));
+                    bizPool.submit(() -> syncWideTable(table, op, after, before));
+                }
                 default -> log.warn("[CDC] unknown op: {}", op);
             }
         } catch (Exception e) {

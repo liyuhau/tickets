@@ -1,5 +1,6 @@
 package org.inventory.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.common.ResultCode;
 import org.inventory.api.InventoryFacade;
@@ -8,23 +9,15 @@ import org.inventory.api.InventoryRpcException;
 import org.inventory.api.StockDTO;
 import org.inventory.entity.ProductPO;
 import org.inventory.mapper.ProductMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 旅游产品库存领域服务（MyBatis 持久化版）。
- * <ul>
- *   <li>读：{@link ProductMapper#selectById}</li>
- *   <li>写：先 {@code SELECT ... FOR UPDATE} 行级悲观锁，再带 {@code version} 条件
- *       做乐观锁 UPDATE（双重防超卖）。</li>
- *   <li>抛 {@link InventoryRpcException} 自动回滚事务。</li>
- * </ul>
  */
+@Slf4j
 @DubboService(interfaceClass = InventoryFacade.class, version = InventoryRpc.VERSION)
 public class InventoryFacadeImpl implements InventoryFacade {
 
-    private static final Logger log = LoggerFactory.getLogger(InventoryFacadeImpl.class);
 
     private static final int CODE_BAD_REQUEST        = ResultCode.BAD_REQUEST.getCode();
     private static final int CODE_INSUFFICIENT_STOCK = ResultCode.INSUFFICIENT_STOCK.getCode();

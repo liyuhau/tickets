@@ -15,7 +15,7 @@
 
 | 模块 | 端口 | 说明 |
 |---|---|---|
-| `common-core` | - | 统一返回 `R<T>` / 统一异常处理 / ResultCode，自动装配 |
+| `common-core` | - | 统一返回 `R<T>` / 统一异常处理 / 统一线程池管理 / 线程诊断监控 / HttpClient / 鉴权上下文，自动装配 |
 | `inventory-api` | - | Dubbo 接口契约：`InventoryFacade` + `StockDTO` + `ProductType` |
 | `gateway-service` | 8080 | API 网关，路由 `/api/bookings/**`、`/api/inventory/**`、`/api/users/**` |
 | `user-service` | 8081 | 同业账号 |

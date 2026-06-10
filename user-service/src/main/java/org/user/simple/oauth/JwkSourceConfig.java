@@ -5,8 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,11 +42,11 @@ import java.util.UUID;
  * 避免应用代码绑定特定云厂商。如需真正"私钥永不出 KMS"，需要替换
  * {@code JwtEncoder} 用 KMS-backed 签名器（属高合规场景，不在本 demo 范围）。</p>
  */
+@Slf4j
 @Configuration
 @EnableConfigurationProperties(OAuth2KeyProperties.class)
 public class JwkSourceConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(JwkSourceConfig.class);
 
     @Bean
     public JWKSource<SecurityContext> jwkSource(OAuth2KeyProperties props,

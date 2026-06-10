@@ -35,7 +35,7 @@ curl -X PUT "$ES_URL/booking_wide" -H "Content-Type: application/json" -d '
       "userStatus":         { "type": "keyword" },
 
       "productName":        { "type": "text", "analyzer": "standard", "fields": { "keyword": { "type": "keyword" } } },
-      "productTravelDate":  { "type": "date", "format": "yyyy-MM-dd||epoch_millis" },
+      "productTravelDate":  { "type": "date", "format": "yyyy-MM-dd||yyyyMMdd||epoch_millis" },
       "productPriceCents":  { "type": "long" },
       "productStock":       { "type": "integer" }
     }

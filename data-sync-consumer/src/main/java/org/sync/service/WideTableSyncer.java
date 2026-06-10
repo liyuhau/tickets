@@ -3,9 +3,8 @@ package org.sync.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.common.http.HttpClientHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -38,10 +37,10 @@ import java.util.concurrent.TimeUnit;
  *   <li>booking 变更 → 从 Redis 读 user + product 维度 → 组装大宽表 → 写入 ES</li>
  * </ol>
  */
+@Slf4j
 @Service
 public class WideTableSyncer {
 
-    private static final Logger log = LoggerFactory.getLogger(WideTableSyncer.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final HttpClientHelper httpClient;

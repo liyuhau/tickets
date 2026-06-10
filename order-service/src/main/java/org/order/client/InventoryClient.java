@@ -2,6 +2,7 @@ package org.order.client;
 
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.common.BusinessException;
 import org.common.ResultCode;
@@ -9,22 +10,16 @@ import org.inventory.api.InventoryFacade;
 import org.inventory.api.InventoryRpc;
 import org.inventory.api.InventoryRpcException;
 import org.inventory.api.StockDTO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
  * 预订中心 → 产品中心 的 Dubbo 调用客户端（含 Sentinel 熔断 / 降级）。
- *
- * <p>资源名 / version 抽到 {@link InventoryRpc} 常量；timeout / check 等
- * 通过 yaml dubbo.consumer.* 配置，本类不再硬编码。</p>
  */
+@Slf4j
 @Component
 public class InventoryClient {
 
-    private static final Logger log = LoggerFactory.getLogger(InventoryClient.class);
-
-    /** Sentinel 资源名（与控制台规则配置保持一致） */
+    /** Sentinel 资源名 */
     public static final String RES_GET    = "inventory.get";
     public static final String RES_DEDUCT = "inventory.deduct";
 

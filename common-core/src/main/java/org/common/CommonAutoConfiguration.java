@@ -19,7 +19,8 @@ import jakarta.servlet.Filter;
  * </ul>
  */
 @AutoConfiguration
-@Import({GlobalExceptionHandler.class, org.common.http.HttpClientAutoConfiguration.class})
+@Import({GlobalExceptionHandler.class, org.common.http.HttpClientAutoConfiguration.class,
+        org.common.diag.ThreadDiagnosticController.class})
 public class CommonAutoConfiguration {
 
     /** 仅在 Servlet Web 环境（Spring MVC）下注册，避免影响 gateway 的 WebFlux 体系 */

@@ -64,6 +64,7 @@ security:
     - /oauth2/**
     - /.well-known/**
     - /actuator/**
+    - /diag/**
   unauthorized:
     code: 1401
     message: '未登录或 token 无效'

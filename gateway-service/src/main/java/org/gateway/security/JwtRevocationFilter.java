@@ -5,8 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -47,10 +46,10 @@ import java.util.List;
  *   <li>缓存 0 秒（{@code security.introspect.cache-seconds=0}）—— 强一致，每个请求都打 AS</li>
  * </ul>
  */
+@Slf4j
 @Component
 public class JwtRevocationFilter implements GlobalFilter, Ordered {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtRevocationFilter.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Value("${security.introspect.enabled:false}")

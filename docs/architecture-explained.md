@@ -14,6 +14,8 @@
 - [六、ZooKeeper 使用](#六zookeeper-使用)
 - [七、CDC + Kafka + 数仓 数据同步](#七cdc--kafka--数仓-数据同步)
 - [八、各组件关联方式总表](#八各组件关联方式总表)
+- [九、统一线程池管理](#九统一线程池管理)
+- [十、线程诊断与监控](#十线程诊断与监控)
 
 ---
 
@@ -868,6 +870,408 @@ ODS (原始数据, CDC 实时写入) → DWD (明细层) → DWS (汇总层) →
 | Consumer | ES/Redis/数仓 | REST API / RedisTemplate / 日志 |
 | Kafka | ZooKeeper | Broker 注册/Controller 选举/Topic 元数据 |
 | Dubbo | ZooKeeper/Nacos | `dubbo.registry.address` 前缀决定 |
+
+---
+
+## 九、统一线程池管理
+
+### 9.1 背景：为什么需要统一管理
+
+在企业级微服务中，线程池散落在各个框架和业务代码中：
+
+| 来源 | 线程名前缀 | 谁在管 |
+|---|---|---|
+| Tomcat | `http-nio-` | Spring Boot 自动配置 |
+| Dubbo | `DubboServerHandler-`、`dubbo-` | Dubbo 框架 |
+| Kafka Consumer | `kafka-`、`org.springframework.kafka-` | Spring Kafka |
+| HikariCP | `HikariPool-` | 数据源自动配置 |
+| Nacos | `com.alibaba.nacos.*` | Nacos Client |
+| Spring 默认 `@Async` | `SimpleAsyncTaskExecutor-` | **未池化！每次 new Thread** |
+| Spring 默认 `@Scheduled` | `scheduling-1` | **单线程！一个卡住全挂** |
+
+**问题**：
+1. Spring 默认的 `@Async` 用 `SimpleAsyncTaskExecutor`，**不池化**，每个任务都 new 一个线程，生产环境可能 OOM
+2. Spring 默认的 `@Scheduled` 只有 **1 个线程**，一个定时任务阻塞就影响所有其他定时任务
+3. 业务代码散落 `Executors.newFixedThreadPool()` 难以统一监控、缺乏优雅关闭
+
+**统一线程池管理解决**：
+- 全局注册、统一命名、集中监控
+- 参数可通过 Nacos 动态调整
+- REST 接口运行时查看指标 + 热调参
+
+### 9.2 架构总览
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│               ThreadPoolAutoConfiguration                      │
+│               (common-core 自动装配)                            │
+│                                                                │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐  │
+│  │ bizThreadPool│  │asyncThreadPool│  │  schedThreadPool   │  │
+│  │ 核心业务      │  │ @Async 默认   │  │  @Scheduled 默认   │  │
+│  │  core=8      │  │  core=4       │  │  core=4            │  │
+│  │  max=32      │  │  max=16       │  │  ScheduledExecutor │  │
+│  │  queue=256   │  │  queue=512    │  │                    │  │
+│  └──────┬───────┘  └──────┬───────┘  └────────┬───────────┘  │
+│         │                 │                    │              │
+│         └─────────────────┼────────────────────┘              │
+│                           ▼                                    │
+│                 ThreadPoolRegistry（全局注册表）                 │
+│                           │                                    │
+│              ┌────────────┼────────────────┐                   │
+│              ▼                             ▼                   │
+│   ThreadPoolMonitorController    ThreadDiagnosticController    │
+│    GET /diag/thread-pools         GET /diag/threads            │
+│    PUT /diag/thread-pools/{n}     （JVM 全量线程分析）           │
+│    （托管池运行时指标+动态调参）                                  │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 9.3 三个线程池的职责划分
+
+| Bean 名 | 用途 | 适用场景 | 拒绝策略 |
+|---|---|---|---|
+| `bizThreadPool` | 核心业务并行任务 | CDC 同步 ES/Redis、批量导出、并行调用外部 API | CallerRunsPolicy（不丢任务） |
+| `asyncThreadPool` | `@Async` 默认执行器 | 事件发布、日志上报、邮件通知 | CallerRunsPolicy |
+| `schedThreadPool` | `@Scheduled` 定时任务 | 定时对账、补偿重试、缓存刷新 | — |
+
+### 9.4 涉及文件清单
+
+```
+common-core/
+├── src/main/java/org/common/thread/
+│   ├── ThreadPoolProperties.java          # @ConfigurationProperties 外部化参数
+│   ├── ThreadPoolRegistry.java            # 全局注册表（注册/快照/动态调参）
+│   ├── ThreadPoolAutoConfiguration.java   # 自动装配（创建3个池 + 注册 + @EnableAsync/Scheduling）
+│   └── ThreadPoolMonitorController.java   # REST 监控端点
+├── src/main/java/org/common/diag/
+│   └── ThreadDiagnosticController.java    # JVM 全量线程诊断端点
+└── src/main/resources/META-INF/spring/
+    └── ...AutoConfiguration.imports       # SPI 注册
+
+infra/nacos-config/
+└── common-shared.yaml                    # 线程池参数（Nacos 动态下发）
+
+data-sync-consumer/
+└── src/main/java/org/sync/listener/
+    └── CdcEventListener.java             # 实际使用 bizThreadPool 的业务代码
+```
+
+### 9.5 关键代码解析
+
+#### 9.5.1 `ThreadPoolProperties` —— 外部化参数
+
+```java
+@ConfigurationProperties(prefix = "thread-pool")
+public class ThreadPoolProperties {
+    private PoolDef biz   = new PoolDef(8, 32, 256, 60, "biz-pool-");
+    private PoolDef async = new PoolDef(4, 16, 512, 120, "async-pool-");
+    private ScheduleDef schedule = new ScheduleDef(4, "sched-pool-");
+    // getter/setter ...
+}
+```
+
+- `@ConfigurationProperties(prefix = "thread-pool")`：Spring Boot 自动将 yaml 中 `thread-pool.*` 绑定到此对象
+- 构造函数提供默认值，**即使不配任何 yaml 也能正常启动**
+- 通过 Nacos `common-shared.yaml` 下发，所有服务统一生效；单个服务可在自己的配置中覆盖
+
+对应的 Nacos 配置（`common-shared.yaml`）：
+
+```yaml
+thread-pool:
+  biz:
+    core-size: ${THREAD_POOL_BIZ_CORE:8}     # 核心线程数
+    max-size: ${THREAD_POOL_BIZ_MAX:32}       # 最大线程数
+    queue-capacity: ${THREAD_POOL_BIZ_QUEUE:256}  # 等待队列长度
+    keep-alive-seconds: 60                     # 空闲线程存活时间
+    thread-name-prefix: biz-pool-              # 线程名前缀（日志排查关键）
+  async:
+    core-size: 4
+    max-size: 16
+    queue-capacity: 512
+    thread-name-prefix: async-pool-
+  schedule:
+    core-size: 4
+    thread-name-prefix: sched-pool-
+```
+
+#### 9.5.2 `ThreadPoolAutoConfiguration` —— 自动装配
+
+```java
+@AutoConfiguration
+@EnableAsync          // 启用 @Async 注解
+@EnableScheduling     // 启用 @Scheduled 注解
+@EnableConfigurationProperties(ThreadPoolProperties.class)
+@Import(ThreadPoolMonitorController.class)
+public class ThreadPoolAutoConfiguration implements AsyncConfigurer {
+
+    @Bean(name = "bizThreadPool", destroyMethod = "shutdown")
+    public ThreadPoolTaskExecutor bizThreadPool(ThreadPoolRegistry registry) {
+        // 从 props 读参数 → 创建池 → 注册到 Registry → 返回
+    }
+
+    @Bean(name = "asyncThreadPool", destroyMethod = "shutdown")
+    public ThreadPoolTaskExecutor asyncThreadPool(ThreadPoolRegistry registry) { ... }
+
+    @Bean(name = "schedThreadPool", destroyMethod = "shutdown")
+    public ThreadPoolTaskScheduler schedThreadPool(ThreadPoolRegistry registry) { ... }
+
+    @Override
+    public Executor getAsyncExecutor() {
+        return asyncThreadPool(threadPoolRegistry());  // @Async 默认走 asyncThreadPool
+    }
+
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return (ex, method, params) ->
+            log.error("[AsyncPool] method={}: {}", method.getName(), ex.getMessage(), ex);
+    }
+}
+```
+
+**核心设计点**：
+
+| 设计 | 原因 |
+|---|---|
+| `implements AsyncConfigurer` | 让 `@Async` 默认走 `asyncThreadPool`，而非 Spring 的单线程 |
+| `destroyMethod = "shutdown"` | JVM 关闭时等待任务完成（优雅停机） |
+| `setWaitForTasksToCompleteOnShutdown(true)` | 配合 `awaitTerminationSeconds=30`，最多等 30 秒 |
+| `CallerRunsPolicy` | 队列满了由提交线程自己执行，保证任务不丢（但会阻塞调用方） |
+| `@ConditionalOnMissingBean` (Registry) | 业务服务可自定义 Registry 覆盖 |
+| `@Import(ThreadPoolMonitorController.class)` | 监控 Controller 跟随自动装配注册 |
+
+#### 9.5.3 `ThreadPoolRegistry` —— 全局注册表
+
+```java
+public class ThreadPoolRegistry {
+    private final Map<String, ThreadPoolTaskExecutor>  executors  = new ConcurrentHashMap<>();
+    private final Map<String, ThreadPoolTaskScheduler> schedulers = new ConcurrentHashMap<>();
+
+    // 注册
+    public void register(String name, ThreadPoolTaskExecutor executor) { ... }
+
+    // 运行时快照（活跃数、队列深度、完成数等）
+    public List<Map<String, Object>> snapshot() { ... }
+
+    // 动态调参（热生效，不重启）
+    public Map<String, Object> resize(String name, Integer coreSize, Integer maxSize) { ... }
+}
+```
+
+**动态调参安全性**：调参时先调大 `maxPoolSize` 再调小 `corePoolSize`，避免出现 `core > max` 抛 `IllegalArgumentException`。
+
+#### 9.5.4 实际使用示例 —— `CdcEventListener`
+
+改造前（串行阻塞 Kafka Consumer 线程）：
+
+```java
+@KafkaListener(topics = "...")
+public void onMessage(String message) {
+    syncToEs(table, after);      // 阻塞
+    evictRedis(table, after);    // 阻塞
+    appendDw(table, op, ...);    // 阻塞
+}
+```
+
+改造后（并行提交到 bizThreadPool）：
+
+```java
+@Qualifier("bizThreadPool")
+private final ThreadPoolTaskExecutor bizPool;
+
+@KafkaListener(topics = "...")
+public void onMessage(String message) {
+    // 解析 CDC 消息...
+    bizPool.submit(() -> syncToEs(table, after));     // 异步
+    bizPool.submit(() -> evictRedis(table, after));   // 异步
+    bizPool.submit(() -> appendDw(table, op, ...));   // 异步
+    bizPool.submit(() -> syncWideTable(table, ...));  // 异步
+}
+```
+
+**效果**：Kafka Consumer 线程只做消息解析和分发，IO 密集的 ES/Redis/DW 写入由 `biz-pool-*` 线程并行执行，消费吞吐量大幅提升。
+
+#### 9.5.5 业务服务如何使用
+
+**方式一：注入 bizThreadPool 显式提交任务**
+
+```java
+@Service
+public class SomeService {
+
+    @Autowired @Qualifier("bizThreadPool")
+    private ThreadPoolTaskExecutor bizPool;
+
+    public void batchExport(List<Long> ids) {
+        List<Future<byte[]>> futures = ids.stream()
+            .map(id -> bizPool.submit(() -> generatePdf(id)))
+            .toList();
+        // 收集结果...
+    }
+}
+```
+
+**方式二：@Async 注解（自动走 asyncThreadPool）**
+
+```java
+@Service
+public class NotificationService {
+
+    @Async  // 走 asyncThreadPool，无需指定 value
+    public void sendBookingNotification(Long orderId) {
+        // 发邮件 / 推消息 ...
+    }
+}
+```
+
+**方式三：@Scheduled 定时任务（自动走 schedThreadPool）**
+
+```java
+@Component
+public class ReconciliationJob {
+
+    @Scheduled(cron = "0 */5 * * * ?")  // 走 schedThreadPool（4线程），不再单线程
+    public void reconcile() {
+        // 对账逻辑 ...
+    }
+}
+```
+
+### 9.6 监控端点
+
+#### `ThreadPoolMonitorController`（托管池运行时指标）
+
+| 端点 | 说明 |
+|---|---|
+| `GET /diag/thread-pools` | 所有托管线程池运行时快照 |
+| `GET /diag/thread-pools/{name}` | 指定池详情 |
+| `GET /diag/thread-pools/summary` | 简要摘要（一行一池） |
+| `PUT /diag/thread-pools/{name}?coreSize=16&maxSize=64` | **运行时动态调参**（热生效） |
+
+示例响应（`GET /diag/thread-pools`）：
+
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "name": "bizThreadPool",
+      "type": "ThreadPoolTaskExecutor",
+      "corePoolSize": 8,
+      "maxPoolSize": 32,
+      "activeCount": 3,
+      "poolSize": 8,
+      "largestPoolSize": 12,
+      "queueCapacity": 256,
+      "queueSize": 0,
+      "queueRemainingCapacity": 256,
+      "completedTaskCount": 1547,
+      "taskCount": 1550,
+      "queueUsagePercent": "0.0%",
+      "isShutdown": false
+    }
+  ]
+}
+```
+
+动态调参示例：
+
+```bash
+# 运行时调大业务线程池（不重启服务）
+curl -X PUT "http://localhost:8082/diag/thread-pools/bizThreadPool?coreSize=16&maxSize=64"
+```
+
+### 9.7 SPI 自动装配机制
+
+```
+META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+├── org.common.CommonAutoConfiguration           # 统一异常 + AuthContextFilter + 线程诊断
+├── org.common.mp.MybatisPlusAutoConfiguration    # MyBatis-Plus
+└── org.common.thread.ThreadPoolAutoConfiguration # 统一线程池（本章新增）
+```
+
+任何微服务只要 `pom.xml` 依赖了 `common-core`，Spring Boot 启动时自动：
+1. 读取 `thread-pool.*` 参数（来自 Nacos / application.yaml / 默认值）
+2. 创建 3 个线程池 Bean → 注册到 `ThreadPoolRegistry`
+3. 启用 `@Async` / `@Scheduled` 注解支持
+4. 注册 `/diag/thread-pools` 监控端点
+
+---
+
+## 十、线程诊断与监控
+
+### 10.1 功能概述
+
+`ThreadDiagnosticController` 提供 JVM 全量线程分析，覆盖**所有线程**（不仅是托管池），包含 Tomcat、Dubbo、Kafka、HikariCP、Nacos、ZooKeeper 等框架线程。
+
+| 端点 | 功能 |
+|---|---|
+| `GET /diag/threads` | 全景概览（JVM 指标 + 状态分布 + 线程池分组 + 死锁检测） |
+| `GET /diag/threads/dump` | 完整线程堆栈（支持 keyword / state 过滤） |
+| `GET /diag/threads/pools` | 按线程池分组（每个池的线程列表） |
+| `GET /diag/threads/deadlocks` | 专项死锁检测 |
+| `GET /diag/threads/top?n=10` | CPU 消耗 Top-N 线程 |
+
+### 10.2 线程分类规���
+
+通过线程名前缀自动归类到对应的池（`POOL_RULES`）：
+
+```
+Tomcat          ← http-nio-*、tomcat-*
+Dubbo           ← DubboServerHandler-*、dubbo-*、NettyServerWorker-*
+Kafka           ← kafka-*、org.springframework.kafka-*
+HikariCP        ← HikariPool-*
+Nacos           ← com.alibaba.nacos.*、nacos-*
+Sentinel        ← sentinel-*
+Netty           ← nioEventLoop*、reactor-*
+Biz-Pool        ← biz-pool-*         ← 统一线程���·业务
+Async-Pool      ← async-pool-*       ← 统一线程池·异步
+Sched-Pool      ← sched-pool-*       ← 统一线程池·定时
+Lettuce-Redis   ← lettuce-*
+ZooKeeper       ← ZkClient-*、SendThread、EventThread、curator-*
+GC-JVM          ← GC *、Reference Handler、Finalizer、DestroyJavaVM
+Other           ← 未匹配到的
+```
+
+### 10.3 两个 Controller 的区别
+
+| | `ThreadDiagnosticController` | `ThreadPoolMonitorController` |
+|---|---|---|
+| 路径前缀 | `/diag/threads` | `/diag/thread-pools` |
+| 视角 | JVM **全量线程**（含框架、GC） | 仅 **业务自建** 的 3 个池 |
+| 指标 | 状态分布、堆栈、死锁、CPU Top-N | 活跃数、队列深度、完成数、使用率 |
+| 调参 | ❌ 只读 | ✅ `PUT` 动态调整 core/max |
+| 适用场景 | 排查死锁、CPU 飙高、线程泄漏 | 运营监控、容量评估、参数调优 |
+
+### 10.4 使用示例
+
+```bash
+# ——— 全景概览 ———
+curl http://localhost:8082/diag/threads
+
+# ——— 只看 Dubbo 相关线程 ———
+curl "http://localhost:8082/diag/threads/dump?keyword=dubbo"
+
+# ——— 只看 BLOCKED 状态（排查死锁/争锁） ———
+curl "http://localhost:8082/diag/threads/dump?state=BLOCKED"
+
+# ——— 死锁专项检测 ———
+curl http://localhost:8082/diag/threads/deadlocks
+
+# ——— CPU 消耗 Top 10 ———
+curl "http://localhost:8082/diag/threads/top?n=10"
+
+# ——— 看业务线程池状态 ———
+curl http://localhost:8082/diag/thread-pools/summary
+
+# ——— 运行时调大线程池（不重启） ———
+curl -X PUT "http://localhost:8082/diag/thread-pools/bizThreadPool?coreSize=16&maxSize=64"
+```
+
+### 10.5 安全说明
+
+- 网关已将 `/diag/**` 加入安全白名单（无需 Token），方便运维快速排查
+- **生产环境建议**：通过 Nginx / 网关规则限制只允许内网 IP 访问 `/diag/**`
 
 ---
 

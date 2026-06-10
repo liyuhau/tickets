@@ -1,2 +1,3 @@
 org.common.CommonAutoConfiguration
 org.common.mp.MybatisPlusAutoConfiguration
+org.common.thread.ThreadPoolAutoConfiguration

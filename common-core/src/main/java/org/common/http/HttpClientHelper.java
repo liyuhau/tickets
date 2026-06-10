@@ -3,8 +3,7 @@ package org.common.http;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -21,9 +20,9 @@ import java.util.Map;
  *   R&lt;OrderDTO&gt; result = httpClient.get(url, new TypeReference&lt;R&lt;OrderDTO&gt;&gt;(){});
  * </pre>
  */
+@Slf4j
 public class HttpClientHelper {
 
-    private static final Logger log = LoggerFactory.getLogger(HttpClientHelper.class);
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;

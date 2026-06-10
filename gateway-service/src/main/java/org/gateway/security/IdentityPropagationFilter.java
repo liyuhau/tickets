@@ -1,7 +1,6 @@
 package org.gateway.security;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -23,10 +22,10 @@ import reactor.core.publisher.Mono;
  *
  * <p>排序在 Spring Security 过滤链之后、Gateway 路由之前。</p>
  */
+@Slf4j
 @Component
 public class IdentityPropagationFilter implements GlobalFilter, Ordered {
 
-    private static final Logger log = LoggerFactory.getLogger(IdentityPropagationFilter.class);
 
     public static final String HEADER_USER_ID      = "X-User-Id";
     public static final String HEADER_USER_CHANNEL = "X-User-Channel";

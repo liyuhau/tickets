@@ -3,9 +3,8 @@ package org.order.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.common.http.HttpClientHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,20 +15,11 @@ import java.util.Map;
 
 /**
  * 订单 ES 大宽表查询服务。
- * <p>
- * 分库分表后，跨表关联查询不走 MySQL JOIN，改为查询 ES {@code booking_wide} 索引。
- * CDC 已实时把 booking + user + product 三表数据聚合到该索引中。
- * </p>
- *
- * <pre>
- *  前端请求 → OrderController → BookingWideQueryService → ES booking_wide
- *                                                          (已包含 user/product 字段)
- * </pre>
  */
+@Slf4j
 @Service
 public class BookingWideQueryService {
 
-    private static final Logger log = LoggerFactory.getLogger(BookingWideQueryService.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final HttpClientHelper httpClient;

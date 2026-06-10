@@ -38,6 +38,25 @@ spring:
         jwt:
           issuer-uri: ${OAUTH2_ISSUER:http://127.0.0.1:8081}
 
+# ============ 统一线程池参数（通过 Nacos 控制台动态调整） ============
+# 各服务可在自己的 {service}.yaml 中覆盖
+thread-pool:
+  biz:
+    core-size: ${THREAD_POOL_BIZ_CORE:8}
+    max-size: ${THREAD_POOL_BIZ_MAX:32}
+    queue-capacity: ${THREAD_POOL_BIZ_QUEUE:256}
+    keep-alive-seconds: 60
+    thread-name-prefix: biz-pool-
+  async:
+    core-size: ${THREAD_POOL_ASYNC_CORE:4}
+    max-size: ${THREAD_POOL_ASYNC_MAX:16}
+    queue-capacity: ${THREAD_POOL_ASYNC_QUEUE:512}
+    keep-alive-seconds: 120
+    thread-name-prefix: async-pool-
+  schedule:
+    core-size: ${THREAD_POOL_SCHED_CORE:4}
+    thread-name-prefix: sched-pool-
+
 # AS 端（user-service）自身 issuer；resourceserver 端通过 issuer-uri 拉公钥
 oauth2:
   issuer: ${OAUTH2_ISSUER:http://127.0.0.1:8081}

@@ -1,7 +1,6 @@
 package org.common;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -17,10 +16,10 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  * <p>HTTP 状态码统一返回 200（404/405 例外），业务结果通过 {@link R#getCode()} 区分，
  * 前端只需对 code 做判断。</p>
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /** 业务异常（可预期） */
     @ExceptionHandler(BusinessException.class)
