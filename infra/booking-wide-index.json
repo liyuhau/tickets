@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "refresh_interval": "1s"
+  },
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "id": { "type": "keyword" },
+      "channel": { "type": "keyword" },
+      "channelOrderNo": { "type": "keyword" },
+      "userId": { "type": "long" },
+      "productId": { "type": "keyword" },
+      "productType": { "type": "keyword" },
+      "quantity": { "type": "integer" },
+      "travelDate": { "type": "keyword" },
+      "passengerName": { "type": "text" },
+      "passengerIdNo": { "type": "keyword" },
+      "unitPriceCents": { "type": "long" },
+      "totalPriceCents": { "type": "long" },
+      "currency": { "type": "keyword" },
+      "status": { "type": "keyword" },
+      "createTime": { "type": "keyword" },
+      "updateTime": { "type": "keyword" },
+      "userName": { "type": "text" },
+      "userChannel": { "type": "keyword" },
+      "userEmail": { "type": "keyword" },
+      "userStatus": { "type": "keyword" },
+      "productName": { "type": "text" },
+      "productTravelDate": { "type": "keyword" },
+      "productPriceCents": { "type": "long" },
+      "productStock": { "type": "integer" }
+    }
+  }
+}

@@ -17,6 +17,7 @@
     <module>order-service</module>
     <module>inventory-service</module>
     <module>data-sync-consumer</module>
+    <module>reindex-job</module>
   </modules>
 
   <properties>

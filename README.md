@@ -3,6 +3,16 @@
 > 整体技术架构：Spring Boot + Nacos + Dubbo + Spring Cloud Gateway + Kafka + Debezium + MySQL/MyBatis + Redis + Elasticsearch + 数仓
 > 业务场景：全球旅游产品同业交易平台，覆盖 **机票** 和 **酒店** 两类产品。
 
+## 最终交付总目录
+
+> 建议先从这里开始阅读，再按需跳转到各文档。
+
+- `docs/index.md`：最终交付总目录页 / 阅读导航
+- `docs/architecture-explained.md`：架构全链路解析、代码关联、组件职责
+- `docs/database.md`：数据库 DDL、索引、测试数据、运维 SQL
+- `docs/es-layer.md`：Elasticsearch 宽表层 ADR、企业级增项、索引治理
+- `docs/deployment-guide.md`：部署前准备、启动顺序、验证清单、常见问题
+
 ## 业务定位
 
 同业 B2B 渠道（如 OTA、海外分销商、企业出行平台）通过本平台完成：
@@ -14,9 +24,18 @@
 
 - `docs/architecture-explained.md`：全链路架构、鉴权、Dubbo、Nacos、Zookeeper、CDC、线程池说明
 - `docs/database.md`：业务库 DDL、索引、测试数据、CDC 覆盖表说明
+- `docs/es-layer.md`：Elasticsearch 宽表层 ADR、索引治理、回填与企业级改造说明
 - `docs/deployment-guide.md`：部署与上线操作指南（基础设施、配置导入、启动顺序、验证清单）
 - `infra/mysql-init/`：容器首次启动执行的建表与测试数据脚本
 - `infra/nacos-config/`：Nacos 配置中心导入模板
+
+## ES 企业级增项
+
+- `data-sync-consumer`：CDC 增量同步主链路
+- `reindex-job`：独立全量回填 Job
+- `docs/es-layer.md`：Elasticsearch 宽表层 ADR（方案 B 主线、企业级增项、后续演进）
+- 索引版本建议：`booking_wide_v1` / `booking_wide_v2` + alias `booking_wide`
+- 后续能力：批量写入、批量删除、补偿机制、健康检查、分页回填、查询服务层
 
 ## 模块
 
@@ -29,6 +48,7 @@
 | `order-service` | 8082 | 预订中心：MySQL `booking` 表 + MyBatis；通过 Dubbo 调用产品中心扣减库存 |
 | `inventory-service` | 8083 | 产品中心：MySQL `product` 表 + MyBatis；提供 Dubbo Service + HTTP 查询 |
 | `data-sync-consumer` | 8090 | CDC 消费：订阅 Debezium 主题，落 ES / Redis / 数仓 |
+| `reindex-job` | - | 独立回填 Job：MySQL `booking` 全量重建 ES `booking_wide` |
 
 ## 数据库
 
@@ -112,6 +132,7 @@ curl -X POST http://localhost:8080/api/bookings -H "Content-Type: application/js
 docker compose up -d mysql nacos zookeeper kafka redis elasticsearch
 powershell -File infra/register-debezium-connector.ps1
 mvn -pl data-sync-consumer -am spring-boot:run
+mvn -pl reindex-job -am spring-boot:run
 ```
 
 Debezium 捕获 `bizdb.user` / `bizdb.product` / `bizdb.booking` 的 binlog 变更并推送 Kafka，`data-sync-consumer` 再分别写入：
@@ -182,6 +203,7 @@ data-sync-service/
 ├── docs/
 │   ├── architecture-explained.md
 │   ├── database.md
+│   ├── es-layer.md
 │   └── deployment-guide.md
 ├── infra/
 │   ├── mysql-init/

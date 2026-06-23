@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: reindex-job
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/bizdb?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+
+cdc:
+  reindex:
+    enabled: ${CDC_REINDEX_ENABLED:true}

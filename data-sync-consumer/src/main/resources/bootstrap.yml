@@ -11,3 +11,25 @@ spring:
           - data-id: common-shared.yaml
             group: DEFAULT_GROUP
             refresh: true
+
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/bizdb?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+    connection-timeout: 3s
+    socket-timeout: 30s
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}
+
+cdc:
+  es:
+    index-prefix: ${CDC_ES_INDEX_PREFIX:}
+    wide-index: ${CDC_ES_WIDE_INDEX:booking_wide}
+    auto-create-index: ${CDC_ES_AUTO_CREATE_INDEX:true}
+    refresh-policy: ${CDC_ES_REFRESH_POLICY:wait_for}
+  reindex:
+    enabled: ${CDC_REINDEX_ENABLED:false}

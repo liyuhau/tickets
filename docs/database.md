@@ -4,6 +4,7 @@
 >
 > 本文档汇总：表结构（DDL）+ 字段说明 + 索引策略 + 测试数据（DML），
 > 与 `infra/mysql-init/01-schema.sql` 保持一致；容器首次启动会自动执行该脚本。
+> 阅读建议：先看 `docs/index.md` 和 `docs/architecture-explained.md`，再看本文件了解表结构与测试数据。
 
 ---
 

@@ -11,6 +11,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.common.http.HttpClientHelper;
+import org.sync.service.BookingWideEsService;
 import org.sync.service.WideTableSyncer;
 
 /**
@@ -34,6 +35,9 @@ public class CdcEventListener {
 
     @Autowired
     private WideTableSyncer wideTableSyncer;
+
+    @Autowired
+    private BookingWideEsService bookingWideEsService;
 
     @Value("${spring.elasticsearch.uris:http://localhost:9200}")
     private String esBaseUrl;
