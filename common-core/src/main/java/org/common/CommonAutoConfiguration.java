@@ -1,6 +1,7 @@
 package org.common;
 
 import org.common.auth.AuthContextFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -27,9 +28,11 @@ public class CommonAutoConfiguration {
     @Bean
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnClass(name = "jakarta.servlet.Filter")
-    public FilterRegistrationBean<Filter> authContextFilter() {
+    public FilterRegistrationBean<Filter> authContextFilter(
+            @Value("${spring.cloud.gateway.internal-api.secret-key:DefaultSecretKeyForDevelopmentDoNotUseInProd}") String secretKey,
+            @Value("${spring.cloud.gateway.internal-api.timestamp-validity-ms:60000}") long timestampValidityMs) {
         FilterRegistrationBean<Filter> reg = new FilterRegistrationBean<>();
-        reg.setFilter(new AuthContextFilter());
+        reg.setFilter(new AuthContextFilter(secretKey, timestampValidityMs));
         reg.addUrlPatterns("/*");
         reg.setOrder(Integer.MIN_VALUE + 10);   // 尽早执行
         reg.setName("authContextFilter");

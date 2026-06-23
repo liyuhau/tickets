@@ -20,3 +20,8 @@ spring:
           - data-id: common-shared.yaml
             group: DEFAULT_GROUP
             refresh: true
+
+# Dubbo 服务扫描基础包
+dubbo:
+  scan:
+    base-packages: org.order.service

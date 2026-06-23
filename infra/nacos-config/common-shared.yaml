@@ -60,3 +60,42 @@ thread-pool:
 # AS 端（user-service）自身 issuer；resourceserver 端通过 issuer-uri 拉公钥
 oauth2:
   issuer: ${OAUTH2_ISSUER:http://127.0.0.1:8081}
+
+# ============================================================
+# Dubbo 统一治理配置
+# ============================================================
+dubbo:
+  # 全局注册中心
+  registry:
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
+    parameters:
+      namespace: ${NACOS_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+
+  # 全局协议配置
+  protocol:
+    name: dubbo
+    port: -1 # -1 表示随机端口
+
+  # 全局服务提供方配置
+  provider:
+    timeout: 3000       # 默认服务执行超时 3s
+    threads: 200        # 默认业务线程池 200
+    # 核心服务（如交易、库存）可单独配置更细的线程池模型
+    # threadpool: fixed
+    # accepts: 500
+    # dispatcher: message # 消息派发也进线程池，避免IO线程阻塞
+    # iothreads: 4
+
+  # 全局服务消费方配置
+  consumer:
+    timeout: 5000       # 默认调用超时 5s
+    retries: 1          # 默认重试 1 次（总共调用 2 次）
+    check: false        # 启动时不检查依赖的服务是否可用（可改为 true 强制检查）
+    # 针对特定服务的特定方法，可以覆盖以上配置
+    # 例如，对 inventory-service 的 deductStock 方法禁用重试
+    # inventory-service:
+    #   methods:
+    #     deductStock:
+    #       retries: 0

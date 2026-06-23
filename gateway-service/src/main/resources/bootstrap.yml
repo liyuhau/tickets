@@ -21,3 +21,12 @@ spring:
           - data-id: common-shared.yaml
             group: DEFAULT_GROUP
             refresh: true
+  gateway:
+    internal-api:
+      secret-key: "a-very-long-and-secure-secret-key-for-hs256-in-production"
+      timestamp-validity-ms: 60000 # 60 seconds
+
+security:
+  revocation:
+    check:
+      enabled: true

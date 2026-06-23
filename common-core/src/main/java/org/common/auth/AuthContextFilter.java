@@ -16,12 +16,29 @@ import java.io.IOException;
  */
 public class AuthContextFilter extends OncePerRequestFilter {
 
+    private final String secretKey;
+    private final long timestampValidityMs;
+
+    public AuthContextFilter(String secretKey, long timestampValidityMs) {
+        this.secretKey = secretKey;
+        this.timestampValidityMs = timestampValidityMs;
+    }
+
+    public static final String HEADER_INTERNAL_SIGNATURE = "X-Internal-Signature";
+    public static final String HEADER_INTERNAL_TIMESTAMP = "X-Internal-Timestamp";
+    public static final String HEADER_INTERNAL_NONCE = "X-Internal-Nonce";
+
     @Override
     protected void doFilterInternal(HttpServletRequest req,
                                     HttpServletResponse res,
                                     FilterChain chain) throws ServletException, IOException {
         String uid = req.getHeader(AuthContext.HEADER_USER_ID);
-        if (uid != null && !uid.isBlank()) {
+        String signature = req.getHeader(HEADER_INTERNAL_SIGNATURE);
+        String timestamp = req.getHeader(HEADER_INTERNAL_TIMESTAMP);
+        String nonce = req.getHeader(HEADER_INTERNAL_NONCE);
+
+        // 验证签名，确保请求来自网关
+        if (uid != null && !uid.isBlank() && verifySignature(uid, signature, timestamp, nonce)) {
             try {
                 AuthContext.set(new AuthContext(
                         Long.valueOf(uid),
@@ -29,14 +46,36 @@ public class AuthContextFilter extends OncePerRequestFilter {
                         req.getHeader(AuthContext.HEADER_USER_NAME)));
                 MDC.put("userId", uid);
             } catch (NumberFormatException ignored) {
-                // 头被篡改，直接忽略
+                // Header被篡改，但签名通过了？可能性极小，记录一个警告。
+                logger.warn("Internal auth header 'uid' was tampered but signature is valid. Investigate immediately.");
             }
         }
+
         try {
             chain.doFilter(req, res);
         } finally {
             AuthContext.clear();
             MDC.remove("userId");
         }
+    }
+
+    private boolean verifySignature(String uid, String signature, String timestampStr, String nonce) {
+        if (signature == null || timestampStr == null || nonce == null) {
+            logger.warn("Request is missing internal signature headers. Potentially a request that bypassed the gateway.");
+            return false; // Or throw an exception, depending on security policy
+        }
+
+        try {
+            long requestTimestamp = Long.parseLong(timestampStr);
+            if (System.currentTimeMillis() - requestTimestamp > timestampValidityMs) {
+                logger.warn("Internal signature timestamp is expired.");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid internal signature timestamp format.");
+            return false;
+        }
+
+        return InternalHeaderSigner.verify(signature, uid, timestampStr, nonce, secretKey);
     }
 }

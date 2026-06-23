@@ -59,9 +59,10 @@ public class IdentityPropagationFilter implements GlobalFilter, Ordered {
 
     private static String str(Object o) { return o == null ? "" : o.toString(); }
 
+    public static final int ORDER = -50;
+
     @Override
     public int getOrder() {
-        // 必须在路由过滤器（NettyRoutingFilter, order=Integer.MAX_VALUE）之前
-        return -50;
+        return ORDER;
     }
 }
